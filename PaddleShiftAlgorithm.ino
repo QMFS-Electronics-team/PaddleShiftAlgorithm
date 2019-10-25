@@ -40,9 +40,25 @@ void loop() {
   // Interrupt signal from paddel
   // Get both biases
   shiftControl(paddleFlag, biasE, biasD); // Control Gear
-                        
+  
 
   //mughees to include the code below this comment
+if(shiftPaddleUp) {
+  clutchControl(1, 5, 5);
+  solenoidControl(1);
+  delay(100);
+  solenoidControl(0);
+  clutchControl(0, 5, 5);
+}
+
+
+if(shiftPaddleDown) {
+  clutchControl(1, 5, 5);
+  solenoidControl(2);
+  delay(100);
+  solenoidControl(0);
+  clutchControl(0, 5, 5);
+}
 }
 
 void paddleUp_ISR() // Need to see if this can be implemented
