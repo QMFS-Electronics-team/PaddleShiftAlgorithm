@@ -1,65 +1,77 @@
 #include <Servo.h> // Servo Motor Library
 
-Servo servo; // Declare the servo
-int analogPinE = A0; // The pin to use for reading the potentiometer
-int analogPinD = A1;
-int solenoidPin = A2; // The pin to write to the solenoid
-int interruptPinR = A3; // The pin which will provide the interrupt
-int interruptPinL = A4;
+//_____________Variable Declarations_____________
+Servo servo; // Servo Motor Object
 
+// Potentiometer Pins
+int analogPinE = A0;
+int analogPinD = A1;
+
+// Solenoid Pins
+int solenoidPinU = A2; // Downshift Solenoid Pin
+int solenoidPinD = A3; // Upshift Solenoid Pin
+
+// Interrupt Pins
+int interruptPinR = A4; // The pin which will provide the interrupt
+int interruptPinL = A5;
+
+
+// Variables Declared
 int paddleFlag;
 int biasE;
 int biasD;
 
 
-void setup() {
+void setup() 
+{
   // Setup the analogue pins and servo  
   pinMode(analogPinE,INPUT);
   pinMode(analogPinD,INPUT);
+  
   servo.attach(9); // Servo is attached to pin 9
 
-  // Setup the solenoid pin 
-  pinMode(solenoidPin, OUTPUT);
+  // Setup the solenoid pins 
+  pinMode(solenoidPinU, OUTPUT);
+  pinMode(solenoidPinD, OUTPUT);
 
-  // Setup the interrupt
+  // Setup the interrupts
   attachInterrupt(digitalPinToInterrupt(interruptPinR),paddleUp_ISR, CHANGE); // UpShift
   attachInterrupt(digitalPinToInterrupt(interruptPinL),paddleUp_ISR, CHANGE); // DownShift
   
   Serial.begin(9600); // this will be used to print out debug information 
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
 
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(1000);                       // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  delay(1000); 
+//________________Main Loop________________
+
+void loop() {
   // Interrupt signal from paddel
   // Get both biases
   shiftControl(paddleFlag, biasE, biasD); // Control Gear
   
 
   //mughees to include the code below this comment
-if(shiftPaddleUp) {
-  clutchControl(1, 5, 5);
-  solenoidControl(1);
-  delay(100);
-  solenoidControl(0);
-  clutchControl(0, 5, 5);
+  if(paddleFlag) {
+    clutchControl(1, 5, 5);
+    solenoidControl(1);
+    delay(100);
+    solenoidControl(0);
+    clutchControl(0, 5, 5);
+  }
+  
+  
+  if(paddleFlag) {
+    clutchControl(1, 5, 5);
+    solenoidControl(2);
+    delay(100);
+    solenoidControl(0);
+    clutchControl(0, 5, 5);
+  }
 }
 
 
-if(shiftPaddleDown) {
-  clutchControl(1, 5, 5);
-  solenoidControl(2);
-  delay(100);
-  solenoidControl(0);
-  clutchControl(0, 5, 5);
-}
-}
+//____________Interrupt Service Routines____________
+
 
 void paddleUp_ISR() // Need to see if this can be implemented
 {
@@ -71,62 +83,75 @@ void paddleDown_ISR()
   paddleFlag = 0;
 }
 
-void shiftControl(int shift, int biasE, int biasD)
-{
-  clutchControl(1, biasE, biasD);
-  solenoidControl(1);
-  delay(1000); // Need to add verification of gear selection 
-  solenoidControl(0);
-  clutchControl(0, biasE, biasD);
-}
 
-void clutchControl(int engage, int biasE, int biasD)
+//________________Control Functions________________
+
+
+/*int shift is for solenoid control 
+ * 0,1,2 = Netural, Push, Pull
+int bias is for clutch speed */
+void shiftControl(int shift, int biasE, int biasD) //Controls The Gear Shifts
 {
-  if(engage == 1)
+  clutchControl(1, biasE, biasD); // Engage Clutch
+  solenoidControl(shift);         // Push Solenoid For Up Shift
+  delay(1000);                    // Delay to allow for the gear to change <-- Need to add verification of gear selection 
+  solenoidControl(0);             // Power off solenoid - Netural Position
+  clutchControl(0, biasE, biasD); //Release Clutch
+} // End shiftControl
+
+/* int engage 0,1 = Disengage, Engage 
+ * int bias is for clutch speed */
+void clutchControl(int engage, int biasE, int biasD) // Controls The Clutch
+{
+  if(engage == 1)                 // Engage Clutch
   {
-    servoControl(biasE,engage);
+    servoControl(biasE,engage);   // Move Servo Arm Accordingly 
   }
-  else if(engage == 0); 
+  else if(engage == 0);           // Disengage Clutch
   {
-    servoControl(biasD,engage);
+    servoControl(biasD,engage);   // Move Servo Arm Accordingly
   }
   
-}
+} // End clutchControl
 
-void servoControl(int bias, int rotationDirection)
+/* int bias is for the speed of the servo 
+ * int rotationDirection is the direction the arm moves 
+ * 0,1 = 0-180, 180-0 */
+void servoControl(int bias, int rotationDirection) // Rotates Servo Arm 
 {
-  Serial.print("Bias Value:");
-  Serial.println(bias); 
   int angle;
-  if(rotationDirection == 1) // Engage Clutch
+  if(rotationDirection == 1)                    // Engage Clutch
   {
-    for(angle = 0; angle < 180; angle += bias)
+    for(angle = 0; angle < 180; angle += bias)  // Rotate Servo To Engage Clutch
     {
       servo.write(angle);
     }
   }
-  else if(rotationDirection == 0) // Disengage Clutch
+  else if(rotationDirection == 0)               // Disengage Clutch
   {
-    for(angle = 180; angle > 0; angle -= bias)
+    for(angle = 180; angle > 0; angle -= bias)  // Rotate Servo To Disengage Clutch
     {
       servo.write(angle);
     }
   }
 
-}
+} // End servoControl
 
-void solenoidControl(int shift)
+/*int shift control the actuation of the solenoid
+ * 0,1,2, = Netural, Push, Pull */
+void solenoidControl(int shift) // Activate Solenoid To Change Gear
 {
   if(shift == 0) //Netural
   {
-    digitalWrite(solenoidPin, LOW);
+    digitalWrite(solenoidPinU, LOW);
+    digitalWrite(solenoidPinD, LOW);
   }
   else if(shift == 1) // Push
   {
-    digitalWrite(solenoidPin, HIGH);
+    digitalWrite(solenoidPinU, HIGH);
   }
   else if(shift == 2) // Pull
   {
-    // Need to figure out how the solenoid will pull
+    digitalWrite(solenoidPinD, HIGH);
   }
-}
+} // End solenoidControl

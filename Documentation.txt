@@ -1,0 +1,53 @@
+PaddleShiftAlgorithm Documentation 
+
+Control Functions 
+
+Control functions allow for control of hardware such as motors, and solenoid which interate
+with other larger mechanical components. 
+
+
+High Level Methods
+
+
+void shiftControl(int shift, int biasE, int biasD);
+
+This method helps chage gear, based on the value of int shift controls the solenoid which
+controls the gear. The value 0 is for netural position, 1, is for an up shift, 2 is for a
+down shift. The bias values control the speed at which the clutch is engaged. The value 
+biasE is for the speed to engage the clutch for and biasD is for the speed to diengage
+the clutch.
+
+
+
+void clutchControl(int engage, int biasE, int biasD);
+
+This method activates the clutch based on the value of engage, engage = 1 engages the clutch
+engae = 0 disengages the clutch. The two bias integer values control the speed of how quickly
+the clutch is to be fully engaged (biasE) or disengaged (biasD). 
+
+
+
+
+
+
+Low Level Functions
+
+
+
+void servoControl(int bias, int rotationDirection);
+
+This method controls the servo motor. The value in bias is the speed at the servo will rotate.
+The value int rotationDirection can be either 0 or 1 for clockwise and anticlockwise
+respectively or to engage or disengage the clutch.
+
+
+
+void solenoidControl(int shift);
+
+This method controls the solenoid. The method takes the argument shift which can take 3
+different values, 0, 1, 2 for netural, push (extend) and pull (retract) motions. Pushing 
+is used to shift to a higher gear and pull is to shift to a lower gear.
+
+
+
+
