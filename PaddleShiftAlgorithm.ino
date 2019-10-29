@@ -137,7 +137,10 @@ void servoControl(int bias, int rotationDirection) // Rotates Servo Arm
 
 } // End servoControl
 
-/*int shift control the actuation of the solenoid
+/*solenoidControl()
+ * @brief: The solenoid has 3 modes push,pull and neutral. Writing a 1 to GPIO pins will drive a circuit to control the relays. Writing to pin: solenoidPinU cause an upshift and writing to pin: solenoidPinD causes downshift.
+ * @params:
+ * int shift control the actuation of the solenoid
  * 0,1,2, = Netural, Push, Pull */
 void solenoidControl(int shift) // Activate Solenoid To Change Gear
 {
