@@ -62,10 +62,6 @@ void loop()
   // Get bias
   bias = 30; // map(analogRead(A0),0,1023,0,180);
 
-
-  // Reporting
-  reportData(true,paddleFlagUp,paddleFlagDown,bias,priorFlagU,priorFlagD,priorBias);
-
   delay(250);
   if(paddleFlagUp == 0) // Up Shift
   { 
@@ -87,13 +83,11 @@ void loop()
 
 void paddleUp_ISR() // Need to see if this can be implemented
 {
-  //Serial.print("Up Shift Button Pressed\n");
   paddleFlagUp = 0;
 }
  
 void paddleDown_ISR()
 {
-  //Serial.print("Down Shift Button Pressed\n");
   paddleFlagDown = 0;
 }
 
@@ -109,8 +103,8 @@ void shiftControl(int shift, int bias) //Controls The Gear Shifts
   clutchControl(1, bias); // Engage Clutch
   solenoidControl(shift); // Control Solenoid
   delay(1000);            // Delay to allow for the gear to change <-- Need to add verification of gear selection
-  solenoidControl(0);     // Power off solenoid - Netural Position
-  clutchControl(0,bias);  // Release Clutch
+  solenoidControl(!shift);     // Power off solenoid - Netural Position
+  clutchControl2(0,bias);  // Release Clutch
 } // End shiftControl
 
 /* int engage 0,1 = Disengage, Engage 
@@ -122,7 +116,11 @@ void clutchControl(int engage, int bias) // Controls The Clutch
     Serial.print("Clutch Engaged\n");
     servoControl(bias,engage);   // Move Servo Arm Accordingly 
   }
-  else if(engage == 0);           // Disengage Clutch
+}
+
+void clutchControl2(int engage, int bias)
+{
+  if(engage == 0);           // Disengage Clutch
   {
     Serial.print("Clutch Disenganged\n"); 
     servoControl(bias,engage);   // Move Servo Arm Accordingly
@@ -182,26 +180,3 @@ void solenoidControl(int shift) // Activate Solenoid To Change Gear
     delay(10); // Delay added for testing
   }
 } // End solenoidControl
-
-
-
-//_______________Reporting Functions_______________
-
-void reportData(bool enable, int paddleFlagUp, int paddleFlagDown, int bias, int priorFlagU, int priorFlagD, int priorBias)
-{
-  if(enable)
-  {
-    if(paddleFlagUp != priorFlagU)
-    {
-      Serial.print("Paddle Flag Up: "+ (String)paddleFlagUp + "\n");  
-    }
-    else if(paddleFlagDown != priorFlagD)
-    {
-      Serial.print("Paddle Flag Down: "+ (String)paddleFlagDown + "\n");
-    }
-    else if(bias!= priorBias)
-    {
-      Serial.print("Bias: " + (String)bias +" Degrees/Cycle \n");
-    } 
-  }
-}
