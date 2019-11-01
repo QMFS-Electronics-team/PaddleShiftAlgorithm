@@ -11,13 +11,17 @@ int solenoidPinU = A2; // Downshift Solenoid Pin
 int solenoidPinD = A3; // Upshift Solenoid Pin
 
 // Interrupt Pins
-int interruptPinR = 2; //A4; // The pin which will provide the interrupt
-int interruptPinL = 3; //A5;
+int interruptPinR = 2; 
+int interruptPinL = 3;
 
 // Variables Declared
 int paddleFlagDown;
 int paddleFlagUp;
 int bias;
+
+int priorBias; 
+int priorFlagU;
+int priorFlagD;
 
 //_____________________Setup_____________________
 void setup() 
@@ -33,7 +37,6 @@ void setup()
   pinMode(solenoidPinD, OUTPUT);
 
   // Setup the interrupts
-
   pinMode(interruptPinR, INPUT_PULLUP);
   pinMode(interruptPinL, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(interruptPinR),paddleUp_ISR, CHANGE); // UpShift
@@ -55,25 +58,21 @@ void loop()
   // Interrupt signal from paddel
   paddleFlagUp = digitalRead(interruptPinR);
   paddleFlagDown = digitalRead(interruptPinL);
-  //Serial.print("Paddle Flag: " + (String)paddleFlagUp + "\n");
   
   // Get bias
   bias = 30; // map(analogRead(A0),0,1023,0,180);
 
 
-  //Add a change here, so only when the values change print them.
-  //Serial.print("Paddle Flag Up: "+ (String)paddleFlagUp + "\n");
-  //Serial.print("Paddle Flag Down: "+ (String)paddleFlagDown + "\n");
-  //Serial.print("Bias: " + (String)bias +" Degrees/Cycle \n");
+  // Reporting
+  reportData(true,paddleFlagUp,paddleFlagDown,bias,priorFlagU,priorFlagD,priorBias);
 
   delay(250);
   if(paddleFlagUp == 0) // Up Shift
   { 
-    //Serial.print("Running\n");
     shiftControl(1,bias);
     paddleFlagUp = 1;
   }  
-  
+
   if(paddleFlagDown == 0) // Down Shift
   { 
     shiftControl(2,bias);
@@ -136,32 +135,25 @@ void clutchControl(int engage, int bias) // Controls The Clutch
  * 0,1 = 0-180, 180-0 */
 void servoControl(int bias, int rotationDirection) // Rotates Servo Arm 
 {
-  //Serial.print("Servo Control Running \n");
   int angle;
   if(rotationDirection == 1)                    // Engage Clutch
   {
-    //Serial.print("Engaging Clutch\n");
     for(angle = 0; angle < 180; angle += bias)  // Rotate Servo To Engage Clutch
     {
       servo.write(angle);
       delay(100);
     }
-    //servo.write(90); // Stop the servo from rotating continoulsy
-    //Serial.print("Engage Clutch Complete \n");
   }
   else if(rotationDirection == 0)               // Disengage Clutch
   {
-    //Serial.print("Disengageing Clutch\n");
     for(angle = 180; angle > 0; angle -= bias)  // Rotate Servo To Disengage Clutch
     {
       servo.write(angle); 
       delay(100);
     }
-    //servo.write(90); // Strop the servo from rotating continously
-    //Serial.print("Disengaging Clutch Complete\n");
   }
   delay(500);
-  servo.write(90);
+  servo.write(90); // Stop the servo from moving
 } // End servoControl
 
 /*solenoidControl()
@@ -190,3 +182,26 @@ void solenoidControl(int shift) // Activate Solenoid To Change Gear
     delay(10); // Delay added for testing
   }
 } // End solenoidControl
+
+
+
+//_______________Reporting Functions_______________
+
+void reportData(bool enable, int paddleFlagUp, int paddleFlagDown, int bias, int priorFlagU, int priorFlagD, int priorBias)
+{
+  if(enable)
+  {
+    if(paddleFlagUp != priorFlagU)
+    {
+      Serial.print("Paddle Flag Up: "+ (String)paddleFlagUp + "\n");  
+    }
+    else if(paddleFlagDown != priorFlagD)
+    {
+      Serial.print("Paddle Flag Down: "+ (String)paddleFlagDown + "\n");
+    }
+    else if(bias!= priorBias)
+    {
+      Serial.print("Bias: " + (String)bias +" Degrees/Cycle \n");
+    } 
+  }
+}
