@@ -19,6 +19,7 @@ int paddleFlagDown;
 int paddleFlagUp;
 int bias;
 
+//_____________________Setup_____________________
 void setup() 
 {
   // Setup the analogue pins and servo  
@@ -26,7 +27,6 @@ void setup()
 
   // Servo is attached to pin 9
   servo.attach(9);
-  servo.write(0);
 
   // Setup the solenoid pins 
   pinMode(solenoidPinU, OUTPUT);
@@ -40,11 +40,11 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(interruptPinL),paddleDown_ISR, CHANGE); // DownShift
 
   // Set inital flag states
-  paddleFlagUp = 0;
-  paddleFlagDown = 0;
+  paddleFlagUp = 1;
+  paddleFlagDown = 1;
 
   // This will be used to print out debug information 
-  Serial.begin(1200); 
+  Serial.begin(9600); 
 }
 
 
@@ -55,28 +55,31 @@ void loop()
   // Interrupt signal from paddel
   paddleFlagUp = digitalRead(interruptPinR);
   paddleFlagDown = digitalRead(interruptPinL);
+  //Serial.print("Paddle Flag: " + (String)paddleFlagUp + "\n");
   
   // Get bias
-  bias = 5;//map(analogRead(A0),0,1023,0,180);
+  bias = 30; // map(analogRead(A0),0,1023,0,180);
 
-  Serial.print("Paddle Flag Up: "+ (String)paddleFlagUp + "\n");
-  Serial.print("Paddle Flag Down: "+ (String)paddleFlagDown + "\n");
-  Serial.print("Bias: " + (String)bias +" Degrees/Cycle \n");
- 
 
-  //mughees to include the code below this comment
-  if(paddleFlagUp == 1) // Up Shift
+  //Add a change here, so only when the values change print them.
+  //Serial.print("Paddle Flag Up: "+ (String)paddleFlagUp + "\n");
+  //Serial.print("Paddle Flag Down: "+ (String)paddleFlagDown + "\n");
+  //Serial.print("Bias: " + (String)bias +" Degrees/Cycle \n");
+
+  delay(250);
+  if(paddleFlagUp == 0) // Up Shift
   { 
+    //Serial.print("Running\n");
     shiftControl(1,bias);
-    paddleFlagUp = 0;
-  }
+    paddleFlagUp = 1;
+  }  
   
-  
-  if(paddleFlagDown == 1) // Down Shift
+  if(paddleFlagDown == 0) // Down Shift
   { 
     shiftControl(2,bias);
-    paddleFlagDown = 0;
+    paddleFlagDown = 1; 
   }
+
 }
 
 
@@ -86,13 +89,13 @@ void loop()
 void paddleUp_ISR() // Need to see if this can be implemented
 {
   //Serial.print("Up Shift Button Pressed\n");
-  paddleFlagUp = 1;
+  paddleFlagUp = 0;
 }
  
 void paddleDown_ISR()
 {
   //Serial.print("Down Shift Button Pressed\n");
-  paddleFlagDown = 1;
+  paddleFlagDown = 0;
 }
 
 
@@ -108,7 +111,7 @@ void shiftControl(int shift, int bias) //Controls The Gear Shifts
   solenoidControl(shift); // Control Solenoid
   delay(1000);            // Delay to allow for the gear to change <-- Need to add verification of gear selection
   solenoidControl(0);     // Power off solenoid - Netural Position
-  clutchControl(0,bias);  //Release Clutch
+  clutchControl(0,bias);  // Release Clutch
 } // End shiftControl
 
 /* int engage 0,1 = Disengage, Engage 
@@ -117,10 +120,12 @@ void clutchControl(int engage, int bias) // Controls The Clutch
 {
   if(engage == 1)                 // Engage Clutch
   {
+    Serial.print("Clutch Engaged\n");
     servoControl(bias,engage);   // Move Servo Arm Accordingly 
   }
   else if(engage == 0);           // Disengage Clutch
   {
+    Serial.print("Clutch Disenganged\n"); 
     servoControl(bias,engage);   // Move Servo Arm Accordingly
   }
   
@@ -131,22 +136,32 @@ void clutchControl(int engage, int bias) // Controls The Clutch
  * 0,1 = 0-180, 180-0 */
 void servoControl(int bias, int rotationDirection) // Rotates Servo Arm 
 {
+  //Serial.print("Servo Control Running \n");
   int angle;
   if(rotationDirection == 1)                    // Engage Clutch
   {
+    //Serial.print("Engaging Clutch\n");
     for(angle = 0; angle < 180; angle += bias)  // Rotate Servo To Engage Clutch
     {
       servo.write(angle);
+      delay(100);
     }
+    //servo.write(90); // Stop the servo from rotating continoulsy
+    //Serial.print("Engage Clutch Complete \n");
   }
   else if(rotationDirection == 0)               // Disengage Clutch
   {
+    //Serial.print("Disengageing Clutch\n");
     for(angle = 180; angle > 0; angle -= bias)  // Rotate Servo To Disengage Clutch
     {
-      servo.write(angle);
+      servo.write(angle); 
+      delay(100);
     }
+    //servo.write(90); // Strop the servo from rotating continously
+    //Serial.print("Disengaging Clutch Complete\n");
   }
-
+  delay(500);
+  servo.write(90);
 } // End servoControl
 
 /*solenoidControl()
@@ -158,6 +173,7 @@ void solenoidControl(int shift) // Activate Solenoid To Change Gear
 {
   if(shift == 0) //Netural
   {
+    Serial.print("Resetting Solenoid to Netural\n");
     digitalWrite(solenoidPinU, LOW);
     digitalWrite(solenoidPinD, LOW);
   }
