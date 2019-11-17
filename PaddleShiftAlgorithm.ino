@@ -19,10 +19,6 @@ int paddleFlagDown;
 int paddleFlagUp;
 int bias;
 
-int priorBias; 
-int priorFlagU;
-int priorFlagD;
-
 //_____________________Setup_____________________
 void setup() 
 {
